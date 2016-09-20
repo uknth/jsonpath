@@ -2,6 +2,7 @@ package jsonpath
 
 import (
 	"fmt"
+
 	"github.com/mohae/utilitybelt/deepcopy"
 	//"golang.org/x/tools/go/types"
 	"go/token"
@@ -275,27 +276,30 @@ func filter_get_from_explicit_path(obj interface{}, path string) (interface{}, e
 }
 
 func get_key(obj interface{}, key string) (interface{}, error) {
-	switch reflect.TypeOf(obj).Kind() {
-	case reflect.Map:
-		for _, kv := range reflect.ValueOf(obj).MapKeys() {
-			if kv.String() == key {
-				return reflect.ValueOf(obj).MapIndex(kv).Interface(), nil
+	if obj != nil {
+		switch reflect.TypeOf(obj).Kind() {
+		case reflect.Map:
+			for _, kv := range reflect.ValueOf(obj).MapKeys() {
+				if kv.String() == key {
+					return reflect.ValueOf(obj).MapIndex(kv).Interface(), nil
+				}
 			}
-		}
-		return nil, fmt.Errorf("key error: %s not found in object", key)
-	case reflect.Slice:
-		// slice we should get from all objects in it.
-		res := []interface{}{}
-		for i := 0; i < reflect.ValueOf(obj).Len(); i++ {
-			tmp, _ := get_idx(obj, i)
-			if v, err := get_key(tmp, key); err == nil {
-				res = append(res, v)
+			return nil, fmt.Errorf("key error: %s not found in object", key)
+		case reflect.Slice:
+			// slice we should get from all objects in it.
+			res := []interface{}{}
+			for i := 0; i < reflect.ValueOf(obj).Len(); i++ {
+				tmp, _ := get_idx(obj, i)
+				if v, err := get_key(tmp, key); err == nil {
+					res = append(res, v)
+				}
 			}
+			return res, nil
+		default:
+			return nil, fmt.Errorf("object is not map")
 		}
-		return res, nil
-	default:
-		return nil, fmt.Errorf("object is not map")
 	}
+	return nil, fmt.Errorf("object is empty")
 }
 
 func get_idx(obj interface{}, idx int) (interface{}, error) {
